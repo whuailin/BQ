@@ -29,12 +29,12 @@ class Player extends Character
     public function __construct($fd, $serv)
     {
         $this->server = $serv;
-
+        $this->fd = $fd;
         $this->server->push($this->fd, "go");
 
     }
     
-    public function onClientMessage($connection, $data)
+    public function onClientMessage($data)
     {
         $message = json_decode($data, true);
         $action = $message[0];

@@ -50,7 +50,7 @@ class WebSocket extends ZSwooleWebSocket
     {
         $this->log($request->fd . "connect");
 
-        $player = new Player($fd, $server);
+        $player = new Player($request->fd, $server);
 
     }
 
