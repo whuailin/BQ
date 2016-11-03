@@ -36,7 +36,8 @@ abstract class Swoole implements ICallback
             file_put_contents($pidPath . DS . ZConfig::get('project_name') . '_master.pid', $server->master_pid);
         }
 
-        if (!empty(ZConfig::getField('soa', 'register_callback'))) {
+        $register_callback = ZConfig::getField('soa', 'register_callback');
+        if (!empty($register_callback)) {
             call_user_func(ZConfig::getField('soa', 'register_callback'), $server);
         }
     }
@@ -59,7 +60,8 @@ abstract class Swoole implements ICallback
             }
         }
 
-        if (!empty(ZConfig::getField('soa', 'drop_callback'))) {
+        $register_callback = ZConfig::getField('soa', 'register_callback');
+        if (!empty($register_callback)) {
             call_user_func(ZConfig::getField('soa', 'drop_callback'), $server);
         }
     }
