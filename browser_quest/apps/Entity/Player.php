@@ -13,6 +13,8 @@
  */
 namespace Entity;
 
+use Common\Formulas;
+use Common\Utils;
 use socket\TYPE_MESSAGE;
 
 class Player extends Character
@@ -27,8 +29,8 @@ class Player extends Character
     public $fd;
     public $server;
     public $weaponLevel = 0;
-    public $name = '';
-    
+    public $name;
+
     public function __construct($fd, $serv)
     {
         $this->server = $serv;
@@ -57,10 +59,17 @@ class Player extends Character
         }
     }
 
-    function actionHello($data){
-        $name = substr($data[1], 0, 30);
-        $this->name = $name;
-        $data = array(
+    function actionHello($message){
+        $name = $message[1];
+        $this->name = $name === "" ? "lorem ipsum" : $name;
+        $this->kind = TYPES_ENTITIES_WARRIOR;
+        $this->equipArmor($message[2]);
+        $this->equipWeapon($message[3]);
+        $this->orientation = Utils::randomOrientation();
+        $this->updateHitPoints();
+        $this->updatePosition();
+
+        $message = array(
             TYPES_MESSAGES_WELCOME,//type
             $this->fd,//fd
             $name,//name
@@ -68,7 +77,7 @@ class Player extends Character
             200,  //y
             20,//hitpoint
         );
-        $this->sendMsg($data);
+        $this->sendMsg($message);
         echo 'send map data'.PHP_EOL;
         $map_mobs_data = [[2,"818209",45,18,209],[2,"815222",43,15,222],[2,"810235",42,10,235],[2,"12121",2,25,235,2],[2,"1221",2,47,223,3],[2,"1322",2,21,223,1],[2,"1020",2,15,214,3],[2,"1320",2,21,223,4],[2,"1022",2,14,214,4],[2,"1222",2,47,223,4],[2,"1021",2,12,214,2],[2,"12120",2,22,239,3],[2,"1220",2,47,222,4],[2,"1121",2,48,212,3],[2,"1321",2,6,229,3],[2,"929",61,19,233],[2,"11921",2,38,237,null],[2,"11920",2,43,232,4],[2,"927",61,34,210]];
         $this->sendMsg($map_mobs_data);
@@ -183,6 +192,7 @@ class Player extends Character
     
     public function updateHitPoints() 
     {
+        $this->resetHitPoints(Formulas::hp($this->armorLevel));
     }
     
     public function updatePosition() 
