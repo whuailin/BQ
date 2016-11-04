@@ -2,8 +2,8 @@
 
 namespace socket;
 
-use ctrl\Map;
 use Entity\Player;
+use Map\Map;
 use ZPHP\Socket\Callback\SwooleWebSocket as ZSwooleWebSocket;
 use ZPHP\Core\Config as ZConfig;
 
