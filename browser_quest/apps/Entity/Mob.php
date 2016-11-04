@@ -11,7 +11,7 @@
  * @link http://www.workerman.net/
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
-namespace ctrl;
+namespace Entity;
 //use \Workerman\Lib\Timer;
 
 class Mob extends Character

@@ -11,7 +11,7 @@
  * @link http://www.workerman.net/
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
-namespace ctrl;
+namespace Entity;
 
 use socket\TYPE_MESSAGE;
 
@@ -35,6 +35,10 @@ class Player extends Character
         $this->fd = $fd;
         $this->server->push($this->fd, "go");
 
+//        swoole_timer_tick(2000, function ($timer_id) {
+//            echo "tick-2000ms $timer_id \n";
+//        });
+
     }
     
     public function onClientMessage($data)
@@ -45,8 +49,8 @@ class Player extends Character
         var_dump($data);
 
         switch ($action){
-            case TYPE_MESSAGE::HELLO:
-
+            case TYPES_MESSAGES_HELLO:
+                $this->actionHello($data);
                 break;
             default:
                 echo 'TODO : action '.$action;
@@ -57,7 +61,7 @@ class Player extends Character
         $name = substr($data[1], 0, 30);
         $this->name = $name;
         $data = array(
-            TYPE_MESSAGE::WELCOME,//type
+            TYPES_MESSAGES_WELCOME,//type
             $this->fd,//fd
             $name,//name
             12,  //x

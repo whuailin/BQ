@@ -3,9 +3,11 @@
 namespace socket;
 
 use ctrl\Map;
-use ctrl\Player;
+use Entity\Player;
 use ZPHP\Socket\Callback\SwooleWebSocket as ZSwooleWebSocket;
 use ZPHP\Core\Config as ZConfig;
+
+require_once dirname(__DIR__) . '/Common/Constants.php';
 
 class WebSocket extends ZSwooleWebSocket
 {

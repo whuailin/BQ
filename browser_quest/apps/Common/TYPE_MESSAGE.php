@@ -4,7 +4,7 @@
  *
  *  做了两种定义，常量列表，以及组合数据列表
  */
-namespace socket;
+namespace Common;
 
 class TYPE_MESSAGE
 {
