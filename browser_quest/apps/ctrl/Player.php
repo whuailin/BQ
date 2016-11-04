@@ -13,6 +13,8 @@
  */
 namespace ctrl;
 
+use socket\TYPE_MESSAGE;
+
 class Player extends Character
 {
     public $hasEnteredGame = false;
@@ -25,6 +27,7 @@ class Player extends Character
     public $fd;
     public $server;
     public $weaponLevel = 0;
+    public $name = '';
     
     public function __construct($fd, $serv)
     {
@@ -36,10 +39,40 @@ class Player extends Character
     
     public function onClientMessage($data)
     {
-        $message = json_decode($data, true);
-        $action = $message[0];
-        
+        $data = json_decode($data, true);
+        $action = $data[0];
 
+        var_dump($data);
+
+        switch ($action){
+            case TYPE_MESSAGE::HELLO:
+
+                break;
+            default:
+                echo 'TODO : action '.$action;
+        }
+    }
+
+    function actionHello($data){
+        $name = substr($data[1], 0, 30);
+        $this->name = $name;
+        $data = array(
+            TYPE_MESSAGE::WELCOME,//type
+            $this->fd,//fd
+            $name,//name
+            12,  //x
+            200,  //y
+            20,//hitpoint
+        );
+        $this->sendMsg($data);
+        echo 'send map data'.PHP_EOL;
+        $map_mobs_data = [[2,"818209",45,18,209],[2,"815222",43,15,222],[2,"810235",42,10,235],[2,"12121",2,25,235,2],[2,"1221",2,47,223,3],[2,"1322",2,21,223,1],[2,"1020",2,15,214,3],[2,"1320",2,21,223,4],[2,"1022",2,14,214,4],[2,"1222",2,47,223,4],[2,"1021",2,12,214,2],[2,"12120",2,22,239,3],[2,"1220",2,47,222,4],[2,"1121",2,48,212,3],[2,"1321",2,6,229,3],[2,"929",61,19,233],[2,"11921",2,38,237,null],[2,"11920",2,43,232,4],[2,"927",61,34,210]];
+        $this->sendMsg($map_mobs_data);
+    }
+
+    public function sendMsg($array)
+    {
+        return $this->server->push($this->fd, json_encode($array));
     }
     
     public function onClientClose()

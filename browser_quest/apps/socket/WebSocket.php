@@ -3,15 +3,9 @@
 namespace socket;
 
 use ctrl\Map;
-use ctrl\MobArea;
 use ctrl\Player;
-use ZPHP\ZPHP;
-use ZPHP\Protocol\Request;
-use ZPHP\Protocol\Response;
 use ZPHP\Socket\Callback\SwooleWebSocket as ZSwooleWebSocket;
 use ZPHP\Core\Config as ZConfig;
-use ZPHP\Core\Route as ZRoute;
-use socket\TYPE_MESSAGE;
 
 class WebSocket extends ZSwooleWebSocket
 {
@@ -20,6 +14,7 @@ class WebSocket extends ZSwooleWebSocket
     public $mobs = [];
     public $mobAreas = [];
 
+    public $players = [];
     public function onStart(){
         //parent::onStart($this->serv);
         $self = $this;
@@ -52,6 +47,7 @@ class WebSocket extends ZSwooleWebSocket
 
         $player = new Player($request->fd, $server);
 
+        $this->players[$request->fd] = $player;
     }
 
     public function onClose()
@@ -68,30 +64,7 @@ class WebSocket extends ZSwooleWebSocket
 
     public function onMessage($server, $frame)
     {
-
-        $data = json_decode($frame->data, true);
-        var_dump($data);
-        $type = $data[0];
-        if ($type == TYPE_MESSAGE::HELLO) {
-            $name = substr($data[1], 0, 30);
-
-            $data = array(
-                TYPE_MESSAGE::WELCOME,//type
-                $frame->fd,//fd
-                substr($data[1], 0, 30),//name
-                80,  //x
-                200,  //y
-                20,//hitpoint
-            );
-            $this->sendMsg($server, $frame->fd, $data);
-
-            $map_mobs_data = [
-                TYPE_MESSAGE::SPAWN,//type
-
-            ];
-            $this->sendMsg($server, $frame->fd, $data);
-        }
-
+        $this->players[$frame->fd]->onClientMessage($frame->data);
     }
 
     public function onTask($server, $taskId, $fromId, $data)
@@ -115,12 +88,12 @@ class WebSocket extends ZSwooleWebSocket
 
     public function onWorkerStart($server, $workerId)
     {
+        if($server->taskworker){
+            echo "task worker init : ". $workerId.PHP_EOL;
+        }else{
+            echo "normal worker init : ". $workerId.PHP_EOL;
+        }
         parent::onWorkerStart($server, $workerId);
-    }
-
-    public function sendMsg($server, $fd, $array)
-    {
-        return $server->push($fd, json_encode($array));
     }
 
 }
