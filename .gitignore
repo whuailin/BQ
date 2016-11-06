@@ -4,3 +4,6 @@
 vendor
 demo_composer/vendor
 demo_composer/composer.lock
+
+
+/htdocs/config/config_local.json
