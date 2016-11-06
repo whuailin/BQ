@@ -13,6 +13,7 @@
  */
 namespace Entity;
 
+use Common\FormatChecker;
 use Common\Formulas;
 use Common\Utils;
 use socket\TYPE_MESSAGE;
@@ -23,19 +24,33 @@ class Player extends Character
     public $isDead = false;
     public $haters = array();
     public $lastCheckpoint = array();
+    public $formatChecker;
     public $disconnectTimeout = 0;
     public $armor = 0;
     public $armorLevel = 0;
     public $fd;
     public $server;
+    public $worldServ;
     public $weaponLevel = 0;
     public $name;
 
-    public function __construct($fd, $serv)
+    public function __construct($fd, $serv, $worldServ)
     {
         $this->server = $serv;
+        $this->worldServ = $worldServ;
         $this->fd = $fd;
+        parent::__construct($fd, 'player', TYPES_ENTITIES_WARRIOR, 0, 0, '');
+
+        $this->hasEnteredGame = false;
+        $this->isDead = false;
+        $this->haters = array();
+        $this->lastCheckpoint = null;
+        $this->formatChecker = new FormatChecker();
+        $this->disconnectTimeout = 0;
+
         $this->server->push($this->fd, "go");
+
+        //$this->worldServ->addPlayer($this);
 
 //        swoole_timer_tick(2000, function ($timer_id) {
 //            echo "tick-2000ms $timer_id \n";
