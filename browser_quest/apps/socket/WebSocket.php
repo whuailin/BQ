@@ -153,6 +153,19 @@ class WebSocket extends ZSwooleWebSocket
         }
     }
 
+    public function initZoneGroups()
+    {
+        $self = $this;
+        $this->map->forEachGroup(function($id) use ($self)
+        {
+            $self->groups[$id] = (object)array('entities'=> array(),
+                'players' => array(),
+                'incoming'=> array()
+            );
+        });
+        $this->zoneGroupsReady = true;
+    }
+
     public function onClose()
     {
         list($server, $fd, $fromId) = func_get_args();
@@ -194,19 +207,48 @@ class WebSocket extends ZSwooleWebSocket
         $self = $this;
         $this->map = new Map('Maps/world_server.json');
         $this->map->ready(function() use ($self){
+            $self->initZoneGroups();
+            $self->map->generateCollisionGrid();
+
             // Populate all mob "roaming" areas
-            foreach($this->map->mobAreas as $a)
-            {
-                //var_dump($a);
-//                $area = new MobArea($a->id, $a->nb, $a->type, $a->x, $a->y, $a->width, $a->height, $this);
+//            foreach($self->map->mobAreas as $a)
+//            {
+//                $area = new MobArea($a->id, $a->nb, $a->type, $a->x, $a->y, $a->width, $a->height, $self);
 //                $area->spawnMobs();
 //                // @todo bind
 //                //$area->onEmpty($self->handleEmptyMobArea->bind($self, area));
-////                $area->onEmpty(function() use ($self, $area){
-////                    call_user_func(array($self, 'handleEmptyMobArea'), $area);
-////                });
-//                $this->mobAreas[] =  $area;
-            }
+//                $area->onEmpty(function() use ($self, $area){
+//                    call_user_func(array($self, 'handleEmptyMobArea'), $area);
+//                });
+//                $self->mobAreas[] =  $area;
+//            }
+//
+//            // Create all chest areas
+//            foreach($self->map->chestAreas as $a)
+//            {
+//                $area = new ChestArea($a->id, $a->x, $a->y, $a->w, $a->h, $a->tx, $a->ty, $a->i, $self);
+//                $self->chestAreas[] = $area;
+//                // @todo bind
+//                $area->onEmpty(function()use($self, $area){
+//                    call_user_func(array($self, 'handleEmptyChestArea'), $area);
+//                });
+//            }
+//
+//            // Spawn static chests
+//            foreach($self->map->staticChests as $chest)
+//            {
+//                $c = $self->createChest($chest->x, $chest->y, $chest->i);
+//                $self->addStaticItem($c);
+//            }
+//
+            // Spawn static entities
+            $self->spawnStaticEntities();
+//
+//            // Set maximum number of entities contained in each chest area
+//            foreach($self->chestAreas as $area)
+//            {
+//                $area->setNumberOfEntities(count($area->entities));
+//            }
         });
         $this->map->initMap();
 
