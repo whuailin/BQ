@@ -50,7 +50,7 @@ class Player extends Character
 
         $this->server->push($this->fd, "go");
 
-        //$this->worldServ->addPlayer($this);
+        $this->worldServ->addPlayer($this);
 
 //        swoole_timer_tick(2000, function ($timer_id) {
 //            echo "tick-2000ms $timer_id \n";

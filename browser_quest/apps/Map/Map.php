@@ -13,6 +13,8 @@
  */
 namespace Map;
 
+use Common\Utils;
+
 class Map
 {
     public $isLoaded;
@@ -68,7 +70,7 @@ class Map
         $this->zoneHeight = 12;
         $this->groupWidth = floor($this->width / $this->zoneWidth);
         $this->groupHeight = floor($this->height / $this->zoneHeight);
-        
+
         $this->initConnectedGroups($map->doors);
         $this->initCheckpoints($map->checkpoints);
         

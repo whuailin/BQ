@@ -2,6 +2,8 @@
 
 namespace socket;
 
+use Entity\Chest;
+use Entity\Item;
 use Entity\Player;
 use Map\Map;
 use ZPHP\Socket\Callback\SwooleWebSocket as ZSwooleWebSocket;
@@ -19,6 +21,7 @@ class WebSocket extends ZSwooleWebSocket
     public $players = [];
     public $entities = [];
     public $outgoingQueues = [];
+    public $groups = [];
 
     public function onStart(){
         //parent::onStart($this->serv);
@@ -55,8 +58,6 @@ class WebSocket extends ZSwooleWebSocket
         $hasChangedGroups = false;
         if($entity)
         {
-            echo 'map:';
-            var_dump($this->map);
             $groupId = $this->map->getGroupIdFromPosition($entity->x, $entity->y);
             if(empty($entity->group) || ($entity->group && $entity->group != $groupId))
             {
