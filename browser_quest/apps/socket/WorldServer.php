@@ -89,7 +89,7 @@ class WorldServer
                     }
                 
                     // Number of players in this world
-                    $self->pushToPlayer($player, new Messages\Population($self->playerCount, 1));
+                    $self->pushToPlayer($player, new \\Messages\Population($self->playerCount, 1));
                     $self->pushRelevantEntityListTo($player);
                 
                     $moveCallback = function($x, $y) use($player, $self)
@@ -125,7 +125,7 @@ class WorldServer
                 
                         if($hasChangedGroups) 
                         {
-                            $self->pushToPreviousGroups($player, new Messages\Destroy($player));
+                            $self->pushToPreviousGroups($player, new \\Messages\Destroy($player));
                             $self->pushRelevantEntityListTo($player);
                         }
                     });
@@ -302,7 +302,7 @@ class WorldServer
             //$entities = array_map(function($id) { return intval($id); }, $entities);
             if($entities) 
             {
-                $this->pushToPlayer($player, new Messages\Lists($entities));
+                $this->pushToPlayer($player, new \\Messages\Lists($entities));
             }
         }
     }
@@ -314,7 +314,7 @@ class WorldServer
             $entity = $this->getEntityById($id);
             if($entity)
             {
-                $this->pushToPlayer($player, new Messages\Spawn($entity));
+                $this->pushToPlayer($player, new \\Messages\Spawn($entity));
             }
             else
             {
@@ -641,7 +641,7 @@ class WorldServer
         if($entity->type === 'mob') 
         {
             // Let the mob's attacker (player) know how much damage was inflicted
-            $this->pushToPlayer($attacker, new Messages\Damage($entity, $damage));
+            $this->pushToPlayer($attacker, new \Messages\Damage($entity, $damage));
         }
 
         // If the entity is about to die
@@ -652,7 +652,7 @@ class WorldServer
                 $mob = $entity;
                 $item = $this->getDroppedItem($mob);
 
-                $this->pushToPlayer($attacker, new Messages\Kill($mob));
+                $this->pushToPlayer($attacker, new \Messages\Kill($mob));
                 $this->pushToAdjacentGroups($mob->group, $mob->despawn()); // Despawn must be enqueued before the item drop
                 if($item) 
                 {
@@ -786,7 +786,7 @@ class WorldServer
     
     public function onMobMoveCallback($mob) 
     {
-        $this->pushToAdjacentGroups($mob->group, new Messages\Move($mob));
+        $this->pushToAdjacentGroups($mob->group, new \Messages\Move($mob));
         $this->handleEntityGroupMembership($mob);
     }
     
@@ -935,22 +935,22 @@ class WorldServer
                     {
                         if($entity instanceof Player) 
                         {
-                            $self->pushToGroup($id, new Messages\Spawn($entity), $entity->id);
+                            $self->pushToGroup($id, new \Messages\Spawn($entity), $entity->id);
                         } 
                         else 
                         {
-                            $self->pushToGroup($id, new Messages\Spawn($entity));
+                            $self->pushToGroup($id, new \Messages\Spawn($entity));
                         }
                     }
                     foreach($self->groups[$id]->incoming as $entity)
                     {
                         if($entity instanceof Player) 
                         {
-                            $self->pushToGroup($id, new Messages\Spawn($entity), $entity->id);
+                            $self->pushToGroup($id, new \Messages\Spawn($entity), $entity->id);
                         } 
                         else 
                         {
-                            $self->pushToGroup($id, new Messages\Spawn($entity));
+                            $self->pushToGroup($id, new \Messages\Spawn($entity));
                         }
                     }
                     $self->groups[$id]->incoming = array();
@@ -977,11 +977,11 @@ class WorldServer
             $item->handleDespawn(array(
                 'beforeBlinkDelay'=>10000,
                 'blinkCallback'=> function()use($self, $item){
-                    $self->pushToAdjacentGroups($item->group, new Messages\Blink($item));
+                    $self->pushToAdjacentGroups($item->group, new \Messages\Blink($item));
                 },
                 'blinkingDuration'=> 4000,
                 'despawnCallback'=> function()use($self, $item) {
-                    $self->pushToAdjacentGroups($item->group, new Messages\Destroy($item));
+                    $self->pushToAdjacentGroups($item->group, new \Messages\Destroy($item));
                     $self->removeEntity($item);
                 }
             ));
@@ -1029,7 +1029,7 @@ class WorldServer
     
     public function updatePopulation($totalPlayers) 
     {
-        $this->pushBroadcast(new Messages\Population($this->playerCount, $totalPlayers ? $totalPlayers : $this->playerCount));
+        $this->pushBroadcast(new \Messages\Population($this->playerCount, $totalPlayers ? $totalPlayers : $this->playerCount));
     }
     
     public function onConnect($connection)
