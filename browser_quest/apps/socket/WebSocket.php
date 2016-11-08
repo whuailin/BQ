@@ -24,6 +24,8 @@ class WebSocket extends ZSwooleWebSocket
     public $groups = [];
 
     public function onStart(){
+        swoole_set_process_name("BQ: master server process"); //master进程名称
+
         //parent::onStart($this->serv);
         $ip = ZConfig::getField('socket', 'host');
         $port = ZConfig::getField('socket', 'port');
@@ -140,6 +142,7 @@ class WebSocket extends ZSwooleWebSocket
             $this->map->forEachAdjacentGroup($groupId, function($id) use ($self, $isChest, $isItem, $isDroppedItem, $entity)
             {
                 $group = $self->groups[$id];
+                var_dump($group);
                 if($group)
                 {
                     if(!isset($group->entities[$entity->id])
@@ -242,7 +245,7 @@ class WebSocket extends ZSwooleWebSocket
 //            }
 //
             // Spawn static entities
-            $self->spawnStaticEntities();
+//            $self->spawnStaticEntities();
 //
 //            // Set maximum number of entities contained in each chest area
 //            foreach($self->chestAreas as $area)
