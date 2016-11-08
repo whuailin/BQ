@@ -85,14 +85,15 @@ class Player extends Character
         $this->x = 12;
         $this->y = 200;
         $this->worldServ->addPlayer($this);
+        call_user_func($this->worldServ->enterCallback, $this);
 
         $message = array(
             TYPES_MESSAGES_WELCOME,//type
             $this->fd,//fd
             $name,//name
-            12,  //x
-            200,  //y
-            20,//hitpoint
+            $this->x,  //x
+            $this->y,  //y
+            $this->hitPoints,//hitpoint
         );
         $this->sendMsg($message);
 

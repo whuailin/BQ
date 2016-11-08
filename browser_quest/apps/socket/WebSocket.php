@@ -16,15 +16,108 @@ require_once dirname(__DIR__) . '/Common/Constants.php';
 
 class WebSocket extends ZSwooleWebSocket
 {
+    public $worderServer;
+    public $id;
     public $map;
 
     public $mobs = [];
     public $mobAreas = [];
 
     public $players = [];
+    public $playerCount;
     public $entities = [];
     public $outgoingQueues = [];
     public $groups = [];
+
+    public $enterCallback;
+    public function __construct()
+    {
+        $self = $this;
+
+//        $this->onPlayerEnter(
+//        /**
+//         * @param Player $player
+//         */
+//            function($player) use ($self)
+//            {
+//                echo $player->name . " has joined ". $self->id."\n";
+//
+//                if(!$player->hasEnteredGame)
+//                {
+//                    $self->incrementPlayerCount();
+//                }
+//
+//                // Number of players in this world
+//                $self->pushToPlayer($player, new Messages\Population($self->playerCount, 1));
+//                $self->pushRelevantEntityListTo($player);
+//
+//                $moveCallback = function($x, $y) use($player, $self)
+//                {
+//                    echo $player->name . " is moving to (" . $x . ", " . $y . ")\n";
+//
+//                    $player->forEachAttacker(function($mob) use($player, $self)
+//                    {
+//                        $target = $self->getEntityById($mob->target);
+//                        if($target)
+//                        {
+//                            $pos = $self->findPositionNextTo($mob, $target);
+//                            if($mob->distanceToSpawningPoint($pos['x'], $pos['y']) > 50)
+//                            {
+//                                $mob->clearTarget();
+//                                $mob->forgetEveryone();
+//                                $player->removeAttacker($mob);
+//                            }
+//                            else
+//                            {
+//                                $self->moveEntity($mob, $pos['x'], $pos['y']);
+//                            }
+//                        }
+//                    });
+//                };
+//
+//                $player->onMove($moveCallback);
+//                $player->onLootMove($moveCallback);
+//
+//                $player->onZone(function() use($self, $player)
+//                {
+//                    $hasChangedGroups = $self->handleEntityGroupMembership($player);
+//
+//                    if($hasChangedGroups)
+//                    {
+//                        $self->pushToPreviousGroups($player, new Messages\Destroy($player));
+//                        $self->pushRelevantEntityListTo($player);
+//                    }
+//                });
+//
+//                $player->onBroadcast(function($message, $ignoreSelf) use($self, $player)
+//                {
+//                    $self->pushToAdjacentGroups($player->group, $message, $ignoreSelf ? $player->id : null);
+//                });
+//
+//                $player->onBroadcastToZone(function($message, $ignoreSelf) use($self, $player)
+//                {
+//                    $self->pushToGroup($player->group, $message, $ignoreSelf ? $player->id : null);
+//                });
+//
+//                $player->onExit(function() use($self, $player)
+//                {
+//                    echo $player->name . " has left the game.\n";
+//                    $self->removePlayer($player);
+//                    $self->decrementPlayerCount();
+//
+//                    if(isset($self->removedCallback))
+//                    {
+//                        call_user_func($self->removedCallback);
+//                    }
+//                });
+//
+//                if(isset($self->addedCallback))
+//                {
+//                    call_user_func($self->addedCallback);
+//                }
+//            }
+//        );
+    }
 
     public function onStart(){
         swoole_set_process_name("BQ: master server process"); //master进程名称
@@ -254,5 +347,19 @@ class WebSocket extends ZSwooleWebSocket
 //            }
         });
         $self->map->initMap();
+    }
+
+    public function setPlayerCount($count)
+    {
+        $this->playerCount = $count;
+    }
+
+    public function incrementPlayerCount()
+    {
+        $this->setPlayerCount($this->playerCount + 1);
+    }
+
+    public function onPlayerEnter($callback) {
+        $this->enterCallback = $callback;
     }
 }
