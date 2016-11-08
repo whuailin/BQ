@@ -39,7 +39,7 @@ class Player extends Character
         $this->server = $serv;
         $this->worldServ = $worldServ;
         $this->fd = $fd;
-        parent::__construct($fd, 'player', TYPES_ENTITIES_WARRIOR, 12, 200, '');
+        parent::__construct($fd, 'player', TYPES_ENTITIES_WARRIOR, 0, 0, '');
 
         $this->hasEnteredGame = false;
         $this->isDead = false;
@@ -49,8 +49,6 @@ class Player extends Character
         $this->disconnectTimeout = 0;
 
         $this->server->push($this->fd, "go");
-
-        $this->worldServ->addPlayer($this);
 
 //        swoole_timer_tick(2000, function ($timer_id) {
 //            echo "tick-2000ms $timer_id \n";
@@ -83,6 +81,10 @@ class Player extends Character
         $this->orientation = Utils::randomOrientation();
         $this->updateHitPoints();
         $this->updatePosition();
+
+        $this->x = 12;
+        $this->y = 200;
+        $this->worldServ->addPlayer($this);
 
         $message = array(
             TYPES_MESSAGES_WELCOME,//type
