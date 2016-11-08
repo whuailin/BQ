@@ -39,7 +39,7 @@ class Player extends Character
         $this->server = $serv;
         $this->worldServ = $worldServ;
         $this->fd = $fd;
-        parent::__construct($fd, 'player', TYPES_ENTITIES_WARRIOR, 0, 0, '');
+        parent::__construct($fd, 'player', TYPES_ENTITIES_WARRIOR, 12, 200, '');
 
         $this->hasEnteredGame = false;
         $this->isDead = false;
