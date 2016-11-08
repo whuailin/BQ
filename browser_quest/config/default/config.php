@@ -5,7 +5,10 @@
         'app_path'=>'apps',
         'ctrl_path'=>'ctrl',
         'project'=>array(
-            'name'=>'bq',                 
+            'name'=>'bq',
+/*            'language' => 'zh-cn',*/
+            'debug_mode' => 1,
+            'log_path' => 'log',
         	'view_mode'=>'String',   		
         	'ctrl_name'=>'a',				
         	'method_name'=>'m',				

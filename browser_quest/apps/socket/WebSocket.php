@@ -2,10 +2,13 @@
 
 namespace socket;
 
+use Common\DataCenter;
+use Common\Utils;
 use Entity\Chest;
 use Entity\Item;
 use Entity\Player;
 use Map\Map;
+use ZPHP\Common\Debug;
 use ZPHP\Socket\Callback\SwooleWebSocket as ZSwooleWebSocket;
 use ZPHP\Core\Config as ZConfig;
 
@@ -25,20 +28,20 @@ class WebSocket extends ZSwooleWebSocket
 
     public function onStart(){
         swoole_set_process_name("BQ: master server process"); //master进程名称
+        $params = func_get_args();
+        /** @var \swoole_server $server */
+        $server = $params[0];
 
         //parent::onStart($this->serv);
         $ip = ZConfig::getField('socket', 'host');
         $port = ZConfig::getField('socket', 'port');
-        echo 'server start:'. $ip . ':' . $port . PHP_EOL;
+        Debug::info("server master start ip[{$ip}] port[{$port}] pid[" . posix_getpid() . "]version " . SWOOLE_VERSION . "... \n");
+
     }
 
     public function onOpen($server, $request)
     {
-
-        $this->log($request->fd . "connect");
-
         $player = new Player($request->fd, $server, $this);
-
         $this->players[$request->fd] = $player;
     }
 
@@ -142,7 +145,6 @@ class WebSocket extends ZSwooleWebSocket
             $this->map->forEachAdjacentGroup($groupId, function($id) use ($self, $isChest, $isItem, $isDroppedItem, $entity)
             {
                 $group = $self->groups[$id];
-                var_dump($group);
                 if($group)
                 {
                     if(!isset($group->entities[$entity->id])
@@ -159,7 +161,7 @@ class WebSocket extends ZSwooleWebSocket
     public function initZoneGroups()
     {
         $self = $this;
-        $this->map->forEachGroup(function($id) use ($self)
+        $self->map->forEachGroup(function($id) use ($self)
         {
             $self->groups[$id] = (object)array('entities'=> array(),
                 'players' => array(),
@@ -191,31 +193,29 @@ class WebSocket extends ZSwooleWebSocket
 
     }
 
-
-    public function sendAll($server, $data)
-    {
-
-    }
-
-
-    public function log($msg)
-    {
-        if (!ZConfig::getField('socket', 'daemonize', 0)) {
-            echo $msg . PHP_EOL;
-        }
-    }
-
     public function onWorkerStart($server, $workerId)
     {
+
+        //初始化相关数据
+        if($server->taskworker){
+            Debug::info("task worker init : ". $workerId . PHP_EOL);
+        }else{
+            $this->initData();
+            Debug::info("normal worker init : ". $workerId . PHP_EOL);
+        }
+        parent::onWorkerStart($server, $workerId);
+    }
+
+    function initData(){
         $self = $this;
-        $this->map = new Map('Maps/world_server.json');
-        $this->map->ready(function() use ($self){
+        $self->map = new Map('Maps/world_server.json');
+        $self->map->ready(function() use ($self){
             $self->initZoneGroups();
             $self->map->generateCollisionGrid();
 
             // Populate all mob "roaming" areas
-//            foreach($self->map->mobAreas as $a)
-//            {
+            foreach($self->map->mobAreas as $a)
+            {
 //                $area = new MobArea($a->id, $a->nb, $a->type, $a->x, $a->y, $a->width, $a->height, $self);
 //                $area->spawnMobs();
 //                // @todo bind
@@ -224,7 +224,7 @@ class WebSocket extends ZSwooleWebSocket
 //                    call_user_func(array($self, 'handleEmptyMobArea'), $area);
 //                });
 //                $self->mobAreas[] =  $area;
-//            }
+            }
 //
 //            // Create all chest areas
 //            foreach($self->map->chestAreas as $a)
@@ -253,14 +253,6 @@ class WebSocket extends ZSwooleWebSocket
 //                $area->setNumberOfEntities(count($area->entities));
 //            }
         });
-        $this->map->initMap();
-
-        if($server->taskworker){
-            echo "task worker init : ". $workerId.PHP_EOL;
-        }else{
-            echo "normal worker init : ". $workerId.PHP_EOL;
-        }
-        parent::onWorkerStart($server, $workerId);
+        $self->map->initMap();
     }
-
 }

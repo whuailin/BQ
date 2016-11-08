@@ -29,6 +29,7 @@ class Swoole implements IServer
         $this->config = $config;
         $socketType = empty($config['server_type']) ? self::TYPE_TCP : strtolower($config['server_type']);
         $this->config['server_type'] = $socketType;
+
         switch ($socketType) {
             case self::TYPE_TCP:
                 $this->serv = new \swoole_server($config['host'], $config['port'], $config['work_mode'], SWOOLE_SOCK_TCP);
