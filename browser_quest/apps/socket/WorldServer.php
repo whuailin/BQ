@@ -13,6 +13,16 @@
  */
 namespace socket;
 
+use Common\Types;
+use Common\Utils;
+use Entity\Chest;
+use Entity\Item;
+use Entity\Mob;
+use Entity\Npc;
+use Map\ChestArea;
+use Map\Map;
+use Map\MobArea;
+
 class WorldServer
 {
     public $id;
@@ -89,7 +99,7 @@ class WorldServer
                     }
                 
                     // Number of players in this world
-                    $self->pushToPlayer($player, new \\Messages\Population($self->playerCount, 1));
+                    $self->pushToPlayer($player, new \Messages\Population($self->playerCount, 1));
                     $self->pushRelevantEntityListTo($player);
                 
                     $moveCallback = function($x, $y) use($player, $self)
@@ -125,7 +135,7 @@ class WorldServer
                 
                         if($hasChangedGroups) 
                         {
-                            $self->pushToPreviousGroups($player, new \\Messages\Destroy($player));
+                            $self->pushToPreviousGroups($player, new \Messages\Destroy($player));
                             $self->pushRelevantEntityListTo($player);
                         }
                     });
@@ -242,24 +252,24 @@ class WorldServer
         
         $regenCount = $this->ups * 2;
         $updateCount = 0;
-        Timer::add(1/$this->ups, function() use ($self, $regenCount, &$updateCount) 
-        {
-            $self->processGroups();
-            $self->processQueues();
-        
-            if($updateCount < $regenCount) 
-            {
-                $updateCount += 1;
-            } 
-            else 
-            {
-                if($self->regenCallback) 
-                {
-                    call_user_func($self->regenCallback);
-                }
-                $updateCount = 0;
-            }
-        });
+//        Timer::add(1/$this->ups, function() use ($self, $regenCount, &$updateCount)
+//        {
+//            $self->processGroups();
+//            $self->processQueues();
+//
+//            if($updateCount < $regenCount)
+//            {
+//                $updateCount += 1;
+//            }
+//            else
+//            {
+//                if($self->regenCallback)
+//                {
+//                    call_user_func($self->regenCallback);
+//                }
+//                $updateCount = 0;
+//            }
+//        });
         
         echo $this->id." created capacity: ".$this->maxPlayers." players \n";
     }
@@ -302,7 +312,7 @@ class WorldServer
             //$entities = array_map(function($id) { return intval($id); }, $entities);
             if($entities) 
             {
-                $this->pushToPlayer($player, new \\Messages\Lists($entities));
+                $this->pushToPlayer($player, new \Messages\Lists($entities));
             }
         }
     }
@@ -314,7 +324,7 @@ class WorldServer
             $entity = $this->getEntityById($id);
             if($entity)
             {
-                $this->pushToPlayer($player, new \\Messages\Spawn($entity));
+                $this->pushToPlayer($player, new \Messages\Spawn($entity));
             }
             else
             {
@@ -421,7 +431,7 @@ class WorldServer
     public function addPlayer($player) 
     {
         $this->addEntity($player);
-        $this->players[$player->id] = $player;
+        //$this->players[$player->id] = $player;
         $this->outgoingQueues[$player->id] = array();
     }
     

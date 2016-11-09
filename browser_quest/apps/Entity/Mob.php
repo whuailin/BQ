@@ -14,6 +14,9 @@
 namespace Entity;
 //use \Workerman\Lib\Timer;
 
+use Common\Properties;
+use Common\Utils;
+
 class Mob extends Character
 {
     public $spawningX;

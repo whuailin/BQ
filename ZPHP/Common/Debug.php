@@ -87,7 +87,7 @@ class Debug
         } else {
             Terminal::drawStr($msg, 'default');
         }
-        //echo "\n";
+        echo "\n";
         !empty($trace) && Terminal::drawStr("\t" . implode(" <-- ", $trace) . "\n");
     }
 

@@ -14,6 +14,9 @@
 namespace Map;
 //use \Workerman\Lib\Timer;
 
+use Common\Types;
+use Entity\Mob;
+
 class MobArea extends Area
 {
     public $nb;
