@@ -5,6 +5,7 @@ namespace Entity;
 use Common\FormatChecker;
 use Common\Formulas;
 use Common\Utils;
+use socket\WorldServer;
 use ZPHP\Common\Debug;
 
 class Player extends Character
@@ -19,9 +20,16 @@ class Player extends Character
     public $armorLevel = 0;
     public $fd;
     public $server;
+
+    /**
+     * @var WorldServer
+     */
     public $worldServ;
     public $weaponLevel = 0;
     public $name;
+
+    public $zoneCallback;
+    public $moveCallback;
 
     public function __construct($fd, $serv, $worldServ)
     {
@@ -44,7 +52,7 @@ class Player extends Character
 //        });
 
     }
-    
+
     public function onClientMessage($data)
     {
         $data = json_decode($data, true);
@@ -52,21 +60,67 @@ class Player extends Character
 
         Debug::log($data);
 
-        switch ($action){
+        switch ($action) {
             case TYPES_MESSAGES_HELLO:
                 $this->actionHello($data);
+                break;
+            case TYPES_MESSAGES_MOVE:
+                if ($this->moveCallback) {
+                    $x = $data[1];
+                    $y = $data[2];
+
+                    if ($this->worldServ->isValidPosition($x, $y)) {
+                        $this->setPosition($x, $y);
+                        $this->clearTarget();
+
+                        $this->broadcast(new \Messages\Move($this));
+                        call_user_func($this->moveCallback, $this->x, $this->y);
+                    }
+                }
                 break;
             case TYPES_MESSAGES_WHO:
                 array_shift($data);
                 $this->worldServ->pushSpawnsToPlayer($this, $data);
+                break;
             case TYPES_MESSAGES_ZONE:
-                //call_user_func($this->zoneCallback);
+                call_user_func($this->zoneCallback);
+                break;
+            case TYPES_MESSAGES_HIT:
+                $mob = $this->worldServ->getEntityById($data[1]);
+                if($mob)
+                {
+                    $dmg = Formulas::dmg($this->weaponLevel, $mob->armorLevel);
+
+                    if($dmg > 0 && is_callable(array($mob, 'receiveDamage')))
+                    {
+                        $mob->receiveDamage($dmg, $this->id);
+                        $this->worldServ->handleMobHate($mob->id, $this->id, $dmg);
+                        $this->worldServ->handleHurtEntity($mob, $this, $dmg);
+                    }
+                }
+                break;
+            case TYPES_MESSAGES_HURT:
+                $mob = $this->worldServ->getEntityById($data[1]);
+                if ($mob && $this->hitPoints > 0) {
+                    $this->hitPoints -= Formulas::dmg($mob->weaponLevel, $this->armorLevel);
+                    $this->worldServ->handleHurtEntity($this);
+
+                    if ($this->hitPoints <= 0) {
+                        $this->isDead = true;
+                        if (!empty($this->firepotionTimeout)) {
+                            //Timer::del($this->firepotionTimeout);
+                            //$this->firepotionTimeout = 0;
+                        }
+                    }
+                }
+                break;
             default:
-                Debug::error("unimplemented ation:{$action}".PHP_EOL);
+                Debug::error("unimplemented ation:{$action}" . PHP_EOL);
         }
     }
 
-    function actionHello($message){
+    function actionHello($message)
+    {
         $name = $message[1];
         $this->name = $name === "" ? "lorem ipsum" : $name;
         $this->kind = TYPES_ENTITIES_WARRIOR;
@@ -101,127 +155,129 @@ class Player extends Character
     {
         return $this->server->push($this->fd, json_encode($array));
     }
-    
+
     public function onClientClose()
     {
 
     }
-    
+
     public function firepotionTimeoutCallback()
     {
 
     }
-    
+
     public function destroy()
     {
 
     }
-    
+
     public function forEachHaterCallback($mob)
     {
     }
-    
+
     public function getState()
     {
 
     }
-    
+
     public function send($message)
     {
     }
-    
+
     public function broadcast($message, $ignoreSelf = true)
     {
 
     }
-    
+
     public function broadcastToZone($message, $ignoreSelf = true)
     {
 
     }
-    
+
     public function onExit($callback)
     {
     }
-    
-    public function onMove($callback) 
+
+    public function onMove($callback)
     {
+        $this->moveCallback = $callback;
     }
-    
+
     public function onLootMove($callback)
     {
     }
-    
-    public function onZone($callback) 
+
+    public function onZone($callback)
+    {
+        $this->zoneCallback = $callback;
+    }
+
+    public function onOrient($callback)
     {
     }
-    
-    public function onOrient($callback) 
+
+    public function onMessage($callback)
     {
     }
-    
-    public function onMessage($callback) 
+
+    public function onBroadcast($callback)
     {
     }
-    
-    public function onBroadcast($callback) 
+
+    public function onBroadcastToZone($callback)
     {
     }
-    
-    public function onBroadcastToZone($callback) 
+
+    public function equip($item)
     {
     }
-    
-    public function equip($item) 
-    {
-    }
-    
-    public function addHater($mob) 
+
+    public function addHater($mob)
     {
 
     }
-    
-    public function removeHater($mob) 
+
+    public function removeHater($mob)
     {
 
     }
-    
-    public function forEachHater($callback) 
+
+    public function forEachHater($callback)
     {
 
     }
-    
-    public function equipArmor($kind) 
+
+    public function equipArmor($kind)
     {
     }
-    
-    public function equipWeapon($kind) 
+
+    public function equipWeapon($kind)
     {
     }
-    
-    public function equipItem($item) 
+
+    public function equipItem($item)
     {
 
     }
-    
-    public function updateHitPoints() 
+
+    public function updateHitPoints()
     {
         $this->resetHitPoints(Formulas::hp($this->armorLevel));
     }
-    
-    public function updatePosition() 
+
+    public function updatePosition()
     {
 
     }
-    
-    public function onRequestPosition($callback) 
+
+    public function onRequestPosition($callback)
     {
     }
-    
+
     public function resetTimeout()
     {
     }
-    
+
     public function timeout()
     {
     }

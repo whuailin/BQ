@@ -13,8 +13,13 @@
  */
 namespace Messages;
 
+use Entity\Entity;
+
 class Spawn
 {
+    /**
+     * @var Entity
+     */
     public $entity = null;
     public function __construct($entity)
     {

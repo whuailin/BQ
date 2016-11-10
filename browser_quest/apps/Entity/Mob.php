@@ -143,7 +143,7 @@ class Mob extends Character
     {
         if($item) 
         {
-            return new Messages\Drop($this, $item);
+            return new \Messages\Drop($this, $item);
         }
     }
     

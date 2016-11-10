@@ -23,6 +23,7 @@ use Entity\Player;
 use Map\ChestArea;
 use Map\Map;
 use Map\MobArea;
+use ZPHP\Common\Debug;
 
 class WorldServer
 {
@@ -30,6 +31,9 @@ class WorldServer
     public $maxPlayers;
     public $server;
     public $ups;
+    /**
+     * @var Map
+     */
     public $map;
     
     public $entities = array();
@@ -133,8 +137,7 @@ class WorldServer
                     $player->onZone(function() use($self, $player)
                     {
                         $hasChangedGroups = $self->handleEntityGroupMembership($player);
-                
-                        if($hasChangedGroups) 
+                        if($hasChangedGroups)
                         {
                             $self->pushToPreviousGroups($player, new \Messages\Destroy($player));
                             $self->pushRelevantEntityListTo($player);
@@ -331,7 +334,7 @@ class WorldServer
             $entities = array_keys($this->groups[$player->group]->entities);
             $entities = Utils::reject($entities, function($id)use($player) { return $id == $player->id; });
             //$entities = array_map(function($id) { return intval($id); }, $entities);
-            if($entities) 
+            if($entities)
             {
                 $this->pushToPlayer($player, new \Messages\Lists($entities));
             }
@@ -430,6 +433,7 @@ class WorldServer
     public function addEntity($entity) 
     {
         $this->entities[$entity->id] = $entity;
+        var_dump(count($this->entities));
         $this->handleEntityGroupMembership($entity);
     }
     
@@ -929,12 +933,13 @@ class WorldServer
         echo "Players inside group ".$groupId.":";
     }
     
-    public function handleEntityGroupMembership($entity) 
+    public function handleEntityGroupMembership($entity)
     {
         $hasChangedGroups = false;
         if($entity) 
         {
             $groupId = $this->map->getGroupIdFromPosition($entity->x, $entity->y);
+            //Debug::debug("handleEntityGroupMembership groupId : ". $groupId);
             if(empty($entity->group) || ($entity->group && $entity->group != $groupId)) 
             {
                 $hasChangedGroups = true;
