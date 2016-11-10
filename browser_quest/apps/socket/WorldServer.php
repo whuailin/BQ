@@ -19,6 +19,7 @@ use Entity\Chest;
 use Entity\Item;
 use Entity\Mob;
 use Entity\Npc;
+use Entity\Player;
 use Map\ChestArea;
 use Map\Map;
 use Map\MobArea;
@@ -252,6 +253,26 @@ class WorldServer
         
         $regenCount = $this->ups * 2;
         $updateCount = 0;
+
+        swoole_timer_tick(1/$this->ups * 1000, function ($timer_id) use ($self, $regenCount, &$updateCount) {
+            //echo "tick-2000ms $timer_id \n";
+
+            $self->processGroups();
+            $self->processQueues();
+
+            if($updateCount < $regenCount)
+            {
+                $updateCount += 1;
+            }
+            else
+            {
+                if($self->regenCallback)
+                {
+                    call_user_func($self->regenCallback);
+                }
+                $updateCount = 0;
+            }
+        });
 //        Timer::add(1/$this->ups, function() use ($self, $regenCount, &$updateCount)
 //        {
 //            $self->processGroups();
@@ -398,8 +419,9 @@ class WorldServer
         foreach($this->outgoingQueues as $id=>$item)
         {
             if($this->outgoingQueues[$id]) {
-                $connection = $this->server->connections[$id];
-                $connection->send(json_encode($this->outgoingQueues[$id]));
+                //$connection = $this->server->connections[$id];
+                //$connection->send(json_encode($this->outgoingQueues[$id]));
+                $this->server->push($id, json_encode($this->outgoingQueues[$id]));
                 $this->outgoingQueues[$id] = array();
             }
         }

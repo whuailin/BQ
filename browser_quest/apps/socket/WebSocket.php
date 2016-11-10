@@ -76,10 +76,9 @@ class WebSocket extends ZSwooleWebSocket
         if($server->taskworker){
             Debug::info("task worker init : ". $workerId);
         }else{
-            $worldServer = new WorldServer('world_1', 9999, $workerId);
+            $worldServer = new WorldServer('world_1', 9999, $server);
             $worldServer->run('Maps/world_server.json');
             $this->worderServer = $worldServer;
-            //$this->initData();
             Debug::info("normal worker init : ". $workerId);
         }
         parent::onWorkerStart($server, $workerId);
