@@ -13,6 +13,7 @@
  */
 namespace socket;
 
+use Common\Properties;
 use Common\Types;
 use Common\Utils;
 use Entity\Chest;

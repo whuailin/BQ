@@ -13,7 +13,7 @@
  */
 namespace Messages;
 
-use Server\Utils;
+use Common\Utils;
 
 class Drop
 {

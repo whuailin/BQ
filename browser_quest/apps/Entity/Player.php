@@ -4,6 +4,8 @@ namespace Entity;
 
 use Common\FormatChecker;
 use Common\Formulas;
+use Common\Properties;
+use Common\Types;
 use Common\Utils;
 use socket\WorldServer;
 use ZPHP\Common\Debug;
@@ -14,6 +16,9 @@ class Player extends Character
     public $isDead = false;
     public $haters = array();
     public $lastCheckpoint = array();
+    /**
+     * @var FormatChecker
+     */
     public $formatChecker;
     public $disconnectTimeout = 0;
     public $armor = 0;
@@ -27,10 +32,17 @@ class Player extends Character
     public $worldServ;
     public $weaponLevel = 0;
     public $name;
+    public $weapon;
 
     public $zoneCallback;
     public $moveCallback;
     public $broadcastzoneCallback;
+    public $lootmoveCallback;
+    public $broadcastCallback;
+    public $exitCallback;
+    public $orientCallback;
+    public $messageCallback;
+    public $requestposCallback;
 
     public function __construct($fd, $serv, $worldServ)
     {
@@ -94,12 +106,30 @@ class Player extends Character
                     }
                 }
                 break;
-//            case TYPES_MESSAGES_LOOTMOVE:
-//                break;
+            case TYPES_MESSAGES_LOOTMOVE:
+                if($this->lootmoveCallback)
+                {
+                    $this->setPosition($data[1], $data[2]);
+
+                    $item = $this->worldServ->getEntityById($data[3]);
+                    if($item)
+                    {
+                        $this->clearTarget();
+                        $this->broadcast(new \Messages\LootMove($this, $item));
+                        call_user_func($this->lootmoveCallback, $this->x, $this->y);
+                    }
+                }
+                break;
 //            case TYPES_MESSAGES_AGGRO:
 //                break;
-//            case TYPES_MESSAGES_ATTACK:
-//                break;
+            case TYPES_MESSAGES_ATTACK:
+                $mob = $this->worldServ->getEntityById($data[1]);
+                if($mob)
+                {
+                    $this->setTarget($mob);
+                    $this->worldServ->broadcastAttacker($this);
+                }
+                break;
             case TYPES_MESSAGES_HIT:
                 $mob = $this->worldServ->getEntityById($data[1]);
                 if($mob)
@@ -129,14 +159,83 @@ class Player extends Character
                     }
                 }
                 break;
-//            case TYPES_MESSAGES_LOOT:
-//                break;
-//            case TYPES_MESSAGES_TELEPORT:
-//                break;
-//            case TYPES_MESSAGES_OPEN:
-//                break;
-//            case TYPES_MESSAGES_CHECK:
-//                break;
+            case TYPES_MESSAGES_LOOT:
+                $item = $this->worldServ->getEntityById($data[1]);
+
+                if($item)
+                {
+                    $kind = $item->kind;
+
+                    if(Types::isItem($kind))
+                    {
+                        $this->broadcast($item->despawn());
+                        $this->worldServ->removeEntity($item);
+
+                        if($kind == TYPES_ENTITIES_FIREPOTION)
+                        {
+                            $this->updateHitPoints();
+                            $this->broadcast($this->equip(TYPES_ENTITIES_FIREFOX));
+                            //$this->firepotionTimeout = Timer::add(15, array($this, 'firepotionTimeoutCallback'), array(), false);
+                            $hitpoints = new \Messages\HitPoints($this->maxHitPoints);
+                            $data = $hitpoints->serialize();
+                            $this->send(json_encode($data));
+                        }
+                        else if(Types::isHealingItem($kind))
+                        {
+                            $amount = 0;
+                            switch($kind)
+                            {
+                                case TYPES_ENTITIES_FLASK:
+                                    $amount = 40;
+                                    break;
+                                case TYPES_ENTITIES_BURGER:
+                                    $amount = 100;
+                                    break;
+                            }
+
+                            if(!$this->hasFullHealth())
+                            {
+                                $this->regenHealthBy($amount);
+                                $this->worldServ->pushToPlayer($this, $this->health());
+                            }
+                        }
+                        else if(Types::isArmor($kind) || Types::isWeapon($kind))
+                        {
+                            $this->equipItem($item);
+                            $this->broadcast($this->equip($kind));
+                        }
+                    }
+                }
+                break;
+            case TYPES_MESSAGES_TELEPORT:
+                $x = $data[1];
+                $y = $data[2];
+
+                if($this->worldServ->isValidPosition($x, $y))
+                {
+                    $this->setPosition($x, $y);
+                    $this->clearTarget();
+
+                    $this->broadcast(new \Messages\Teleport($this));
+
+                    $this->worldServ->handlePlayerVanish($this);
+                    $this->worldServ->pushRelevantEntityListTo($this);
+                }
+                break;
+            case TYPES_MESSAGES_OPEN:
+                $chest = $this->worldServ->getEntityById($data[1]);
+                if($chest && $chest instanceof Chest)
+                {
+                    $this->worldServ->handleOpenedChest($chest, $this);
+                }
+                break;
+            case TYPES_MESSAGES_CHECK:
+                $checkpoint = $this->worldServ->map->getCheckpoint($data[1]);
+                if($checkpoint)
+                {
+                    $this->lastCheckpoint = $checkpoint;
+                }
+                break;
             default:
                 Debug::error("unimplemented ation:{$action}" . PHP_EOL);
 //                if(isset($this->messageCallback))
@@ -182,35 +281,68 @@ class Player extends Character
 
     public function onClientClose()
     {
-
+        if(!empty($this->firepotionTimeout))
+        {
+            //Timer::del($this->firepotionTimeout);
+            $this->firepotionTimeout = 0;
+        }
+        //Timer::del($this->disconnectTimeout);
+        $this->disconnectTimeout = 0;
+        if(isset($this->exitCallback))
+        {
+            call_user_func($this->exitCallback);
+        }
     }
 
     public function firepotionTimeoutCallback()
     {
-
+        $this->broadcast($this->equip($this->armor)); // return to normal after 15 sec
+        $this->firepotionTimeout = 0;
     }
 
     public function destroy()
     {
+        $this->forEachAttacker(function($mob){
+            $mob->clearTarget();
+        });
+        $this->attackers = array();
 
+        $this->forEachHater(array($this, 'forEachHaterCallback'));
+        $this->haters = array();
     }
 
+    /**
+     * @param $mob Mob
+     */
     public function forEachHaterCallback($mob)
     {
+        $mob->forgetPlayer($this->id);
     }
 
     public function getState()
     {
+        $basestate = $this->_getBaseState();
+        $state = array($this->name, $this->orientation, $this->armor, $this->weapon);
 
+        if($this->target)
+        {
+            $state[] =$this->target;
+        }
+        return array_merge($basestate, $state);
     }
 
     public function send($message)
     {
+        //$this->connection->send($message);
+        $this->server->push($this->fd, $message);
     }
 
     public function broadcast($message, $ignoreSelf = true)
     {
-
+        if($this->broadcastCallback)
+        {
+            call_user_func($this->broadcastCallback, $message, $ignoreSelf);
+        }
     }
 
     public function broadcastToZone($message, $ignoreSelf = true)
@@ -223,6 +355,7 @@ class Player extends Character
 
     public function onExit($callback)
     {
+        $this->exitCallback = $callback;
     }
 
     public function onMove($callback)
@@ -232,6 +365,7 @@ class Player extends Character
 
     public function onLootMove($callback)
     {
+        $this->lootmoveCallback = $callback;
     }
 
     public function onZone($callback)
@@ -241,14 +375,17 @@ class Player extends Character
 
     public function onOrient($callback)
     {
+        $this->orientCallback = $callback;
     }
 
     public function onMessage($callback)
     {
+        $this->messageCallback = $callback;
     }
 
     public function onBroadcast($callback)
     {
+        $this->broadcastCallback = $callback;
     }
 
     public function onBroadcastToZone($callback)
@@ -258,34 +395,63 @@ class Player extends Character
 
     public function equip($item)
     {
+        return new \Messages\EquipItem($this, $item);
     }
 
     public function addHater($mob)
     {
-
+        if($mob) {
+            if(!(isset($this->haters[$mob->id])))
+            {
+                $this->haters[$mob->id] = $mob;
+            }
+        }
     }
 
     public function removeHater($mob)
     {
-
+        if($mob)
+        {
+            unset($this->haters[$mob->id]);
+        }
     }
 
     public function forEachHater($callback)
     {
-
+        array_walk($this->haters, function($mob) use ($callback)
+        {
+            call_user_func($callback, $mob);
+        });
     }
 
     public function equipArmor($kind)
     {
+        $this->armor = $kind;
+        $this->armorLevel = Properties::getArmorLevel($kind);
     }
 
     public function equipWeapon($kind)
     {
+        $this->weapon = $kind;
+        $this->weaponLevel = Properties::getWeaponLevel($kind);
     }
 
     public function equipItem($item)
     {
-
+        if($item) {
+            if(Types::isArmor($item->kind))
+            {
+                $this->equipArmor($item->kind);
+                $this->updateHitPoints();
+                $obj = new \Messages\HitPoints($this->maxHitPoints);
+                $data = $obj->serialize();
+                $this->send(json_encode($data));
+            }
+            else if(Types::isWeapon($item->kind))
+            {
+                $this->equipWeapon($item->kind);
+            }
+        }
     }
 
     public function updateHitPoints()
@@ -295,18 +461,30 @@ class Player extends Character
 
     public function updatePosition()
     {
-
+        if($this->requestposCallback)
+        {
+            $pos = call_user_func($this->requestposCallback);
+            $this->setPosition($pos['x'], $pos['y']);
+        }
     }
 
     public function onRequestPosition($callback)
     {
+        $this->requestposCallback = $callback;
     }
 
     public function resetTimeout()
     {
+        Debug::error('TODO : player->resetTimeout');
+        //Timer::del($this->disconnectTimeout);
+        // 15分钟
+        //$this->disconnectTimeout = Timer::add(15*60, array($this, 'timeout'), false);
     }
 
     public function timeout()
     {
+        Debug::error('TODO : player->timeout');
+        //$this->connection->send('timeout');
+        //$this->connection->close('Player was idle for too long');
     }
 }

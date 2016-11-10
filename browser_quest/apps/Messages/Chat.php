@@ -13,8 +13,6 @@
  */
 namespace Messages;
 
-use Server\Utils;
-
 class Chat
 {
     public $playerId = 0;
