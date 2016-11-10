@@ -52,8 +52,9 @@ class WorldServer
     public $itemCount;
     public $playerCount;
     public $zoneGroupsReady;
-    
-    
+
+    public $enterCallback;
+
     public function __construct($id, $maxPlayers, $websocketServer)
     {
         $this->id = $id;
@@ -433,7 +434,6 @@ class WorldServer
     public function addEntity($entity) 
     {
         $this->entities[$entity->id] = $entity;
-        var_dump(count($this->entities));
         $this->handleEntityGroupMembership($entity);
     }
     

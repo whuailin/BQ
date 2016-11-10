@@ -13,6 +13,8 @@
  */
 namespace Map;
 
+use Entity\Mob;
+
 class Area
 {
     public $id = 0;

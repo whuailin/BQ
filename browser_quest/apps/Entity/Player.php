@@ -30,6 +30,7 @@ class Player extends Character
 
     public $zoneCallback;
     public $moveCallback;
+    public $broadcastzoneCallback;
 
     public function __construct($fd, $serv, $worldServ)
     {
@@ -64,6 +65,21 @@ class Player extends Character
             case TYPES_MESSAGES_HELLO:
                 $this->actionHello($data);
                 break;
+            case TYPES_MESSAGES_WHO:
+                array_shift($data);
+                $this->worldServ->pushSpawnsToPlayer($this, $data);
+                break;
+            case TYPES_MESSAGES_ZONE:
+                call_user_func($this->zoneCallback);
+                break;
+            case TYPES_MESSAGES_CHAT:
+                $msg = trim($data[1]);
+
+                // Sanitized messages may become empty. No need to broadcast empty chat messages.
+                if($msg) {
+                    $this->broadcastToZone(new \Messages\Chat($this, $msg), false);
+                }
+                break;
             case TYPES_MESSAGES_MOVE:
                 if ($this->moveCallback) {
                     $x = $data[1];
@@ -78,13 +94,12 @@ class Player extends Character
                     }
                 }
                 break;
-            case TYPES_MESSAGES_WHO:
-                array_shift($data);
-                $this->worldServ->pushSpawnsToPlayer($this, $data);
-                break;
-            case TYPES_MESSAGES_ZONE:
-                call_user_func($this->zoneCallback);
-                break;
+//            case TYPES_MESSAGES_LOOTMOVE:
+//                break;
+//            case TYPES_MESSAGES_AGGRO:
+//                break;
+//            case TYPES_MESSAGES_ATTACK:
+//                break;
             case TYPES_MESSAGES_HIT:
                 $mob = $this->worldServ->getEntityById($data[1]);
                 if($mob)
@@ -114,8 +129,20 @@ class Player extends Character
                     }
                 }
                 break;
+//            case TYPES_MESSAGES_LOOT:
+//                break;
+//            case TYPES_MESSAGES_TELEPORT:
+//                break;
+//            case TYPES_MESSAGES_OPEN:
+//                break;
+//            case TYPES_MESSAGES_CHECK:
+//                break;
             default:
                 Debug::error("unimplemented ation:{$action}" . PHP_EOL);
+//                if(isset($this->messageCallback))
+//                {
+//                    call_user_func($this->messageCallback, $data);
+//                }
         }
     }
 
@@ -146,9 +173,6 @@ class Player extends Character
         $this->sendMsg($message);
         $this->hasEnteredGame = true;
         $this->isDead = false;
-
-        //$map_mobs_data = [[2,"818209",45,18,209],[2,"815222",43,15,222],[2,"810235",42,10,235],[2,"12121",2,25,235,2],[2,"1221",2,47,223,3],[2,"1322",2,21,223,1],[2,"1020",2,15,214,3],[2,"1320",2,21,223,4],[2,"1022",2,14,214,4],[2,"1222",2,47,223,4],[2,"1021",2,12,214,2],[2,"12120",2,22,239,3],[2,"1220",2,47,222,4],[2,"1121",2,48,212,3],[2,"1321",2,6,229,3],[2,"929",61,19,233],[2,"11921",2,38,237,null],[2,"11920",2,43,232,4],[2,"927",61,34,210]];
-        //$this->sendMsg($map_mobs_data);
     }
 
     public function sendMsg($array)
@@ -191,7 +215,10 @@ class Player extends Character
 
     public function broadcastToZone($message, $ignoreSelf = true)
     {
-
+        if($this->broadcastzoneCallback)
+        {
+            call_user_func($this->broadcastzoneCallback, $message, $ignoreSelf);
+        }
     }
 
     public function onExit($callback)
@@ -226,6 +253,7 @@ class Player extends Character
 
     public function onBroadcastToZone($callback)
     {
+        $this->broadcastzoneCallback = $callback;
     }
 
     public function equip($item)
