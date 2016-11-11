@@ -1,6 +1,6 @@
 ## 简介
 * 客户端来自 : https://github.com/mozilla/BrowserQuest。
-* 服务端使用 Swoole 扩展及ZPHP框架
+* 服务端使用 Swoole 扩展及ZPHP框架实现
 
 ### 搭建
 * TODO
