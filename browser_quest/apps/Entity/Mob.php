@@ -18,6 +18,7 @@ use Common\Properties;
 use Common\Utils;
 use Map\ChestArea;
 use Map\MobArea;
+use ZPHP\Common\Debug;
 
 class Mob extends Character
 {
@@ -93,7 +94,7 @@ class Mob extends Character
             // Prevent the mob from returning to its spawning position
             // since it has aggroed a new player
             //Timer::del($this->returnTimeout);
-            //swoole_timer_clear($this->returnTimeout);
+            swoole_timer_clear($this->returnTimeout);
             $this->returnTimeout = null;
         }
     }
@@ -164,9 +165,10 @@ class Mob extends Character
             {
                 $this->area->removeFromArea($this);
             }
-//            swoole_timer_tick($delay, function ($timer_id) {
-//                call_user_func(array($this, 'callback'));
-//            });
+            swoole_timer_tick($delay, function ($timer_id) {
+                Debug::log('handleRespawn:'.$timer_id);
+                call_user_func(array($this, 'callback'));
+            });
             //Timer::add($delay/1000, array($this, 'callback'), array(), false);
         }
     }
@@ -194,7 +196,9 @@ class Mob extends Character
         $delay = $waitDuration ?  $waitDuration : 4000;
         
         $this->clearTarget();
-        
+        $this->returnTimeout = swoole_timer_tick($delay, function ($timer_id) {
+            call_user_func(array($this, 'timeoutCallback'));
+        });
         //$this->returnTimeout = Timer::add($delay/1000, array($this, 'timeoutCallback'), array(), false);
     }
     

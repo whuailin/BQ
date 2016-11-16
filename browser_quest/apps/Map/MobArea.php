@@ -16,6 +16,7 @@ namespace Map;
 
 use Common\Types;
 use Entity\Mob;
+use ZPHP\Common\Debug;
 
 class MobArea extends Area
 {
@@ -50,10 +51,19 @@ class MobArea extends Area
 
         return $mob;
     }
-    
+
+    /**
+     * @param $mob Mob
+     * @param $delay
+     */
     public function respawnMob($mob, $delay)
     {
         $this->removeFromArea($mob);
+        swoole_timer_tick($delay, function ($timer_id) use($mob) {
+            Debug::log('respawnMob:'. $timer_id.':'. $mob->id);
+            call_user_func(array($this, 'respawnMobCallback'), $mob);
+            swoole_timer_clear($timer_id);
+        });
         //Timer::add($delay/1000, array($this, 'respawnMobCallback'), array($mob), false);
     }
     
@@ -69,6 +79,9 @@ class MobArea extends Area
     
     public function initRoaming($mob)
     {
+        swoole_timer_tick(500, function($timer_id){
+            call_user_func(array($this, 'initRoamingCallback'));
+        });
         //Timer::add(0.5, array($this, 'initRoamingCallback'));
     }
     

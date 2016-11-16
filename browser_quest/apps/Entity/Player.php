@@ -120,8 +120,12 @@ class Player extends Character
                     }
                 }
                 break;
-//            case TYPES_MESSAGES_AGGRO:
-//                break;
+            case TYPES_MESSAGES_AGGRO:
+                if($this->moveCallback)
+                {
+                    $this->worldServ->handleMobHate($data[1], $this->id, 5);
+                }
+                break;
             case TYPES_MESSAGES_ATTACK:
                 $mob = $this->worldServ->getEntityById($data[1]);
                 if($mob)
@@ -154,7 +158,8 @@ class Player extends Character
                         $this->isDead = true;
                         if (!empty($this->firepotionTimeout)) {
                             //Timer::del($this->firepotionTimeout);
-                            //$this->firepotionTimeout = 0;
+                            swoole_timer_clear($this->firepotionTimeout);
+                            $this->firepotionTimeout = 0;
                         }
                     }
                 }
@@ -176,6 +181,10 @@ class Player extends Character
                             $this->updateHitPoints();
                             $this->broadcast($this->equip(TYPES_ENTITIES_FIREFOX));
                             //$this->firepotionTimeout = Timer::add(15, array($this, 'firepotionTimeoutCallback'), array(), false);
+                            $this->firepotionTimeout = swoole_timer_after(15 * 1000, function(){
+                                Debug::log('timeout:'.'firepotionTimeout');
+                                call_user_func(array($this, 'firepotionTimeoutCallback'));
+                            });
                             $hitpoints = new \Messages\HitPoints($this->maxHitPoints);
                             $data = $hitpoints->serialize();
                             $this->send(json_encode($data));
@@ -284,9 +293,11 @@ class Player extends Character
         if(!empty($this->firepotionTimeout))
         {
             //Timer::del($this->firepotionTimeout);
+            swoole_timer_clear($this->firepotionTimeout);
             $this->firepotionTimeout = 0;
         }
         //Timer::del($this->disconnectTimeout);
+        swoole_timer_clear($this->disconnectTimeout);
         $this->disconnectTimeout = 0;
         if(isset($this->exitCallback))
         {
@@ -477,8 +488,13 @@ class Player extends Character
     {
         Debug::error('TODO : player->resetTimeout');
         //Timer::del($this->disconnectTimeout);
+        swoole_timer_clear($this->disconnectTimeout);
         // 15分钟
         //$this->disconnectTimeout = Timer::add(15*60, array($this, 'timeout'), false);
+        $this->disconnectTimeout = swoole_timer_after(15 * 60 * 1000, function(){
+            Debug::log('timeout:'.'disconnectTimeout');
+            call_user_func(array($this, 'timeout'));
+        });
     }
 
     public function timeout()
