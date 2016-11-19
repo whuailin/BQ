@@ -59,11 +59,6 @@ class Player extends Character
         $this->disconnectTimeout = 0;
 
         $this->server->push($this->fd, "go");
-
-//        swoole_timer_tick(2000, function ($timer_id) {
-//            echo "tick-2000ms $timer_id \n";
-//        });
-
     }
 
     public function onClientMessage($data)
